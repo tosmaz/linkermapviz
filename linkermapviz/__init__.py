@@ -7,8 +7,8 @@ import squarify
 from bokeh.plotting import figure, show, output_file, ColumnDataSource
 from bokeh.models import HoverTool, LabelSet
 from bokeh.models.mappers import CategoricalColorMapper
-from bokeh.palettes import Category10
-from bokeh.layouts import column
+from bokeh.palettes import Category20b, Category20c
+from bokeh.layouts import row
 
 class Objectfile:
     def __init__ (self, section, offset, size, comment):
@@ -125,7 +125,8 @@ def main ():
         files = list (map (lambda x: x.basepath, objects))
         size = list (map (lambda x: x.size, objects))
         children = list (map (lambda x: ','.join (map (lambda x: x[1], x.children)) if x.children else x.section, objects))
-        legend = list (map (lambda x: '{} ({})'.format (x.basepath, groupsize[x.basepath]), objects))
+        legend = list (map (lambda x: '{} ({})'.format(x.basepath, groupsize[x.basepath]), objects))
+
         source = ColumnDataSource(data=dict(
             left=left,
             top=top,
@@ -147,25 +148,26 @@ def main ():
 
 
         p = figure(title='Linker map for section {} ({} bytes)'.format (s.section, totalsize),
-                plot_width=width, plot_height=height,
+                plot_width=width + 400, plot_height=height,
                 tools=[hover,'pan','wheel_zoom','box_zoom','reset'],
-                x_range=(0, width), y_range=(0, height))
+                x_range=(-200, width + 200), y_range=(0, height))
 
         p.xaxis.visible = False
         p.xgrid.visible = False
         p.yaxis.visible = False
         p.ygrid.visible = False
 
-        palette = Category10[10]
+        palette = (*Category20b[20], *Category20c[20])
         mapper = CategoricalColorMapper (palette=palette, factors=allFiles)
-        p.rect (x='x', y='y', width='width', height='height', source=source, color={'field': 'file', 'transform': mapper}, legend='legend')
+        p.rect (x='x', y='y', width='width', height='height', source=source, color={'field': 'file', 'transform': mapper}, legend_group='legend')
 
         # set up legend, must be done after plotting
-        p.legend.location = "top_left"
-        p.legend.orientation = "horizontal"
+        p.legend.location = (0, 0)
+        p.legend.orientation = "vertical"
+        p.legend[0].items.sort(reverse=True, key=lambda x: int(x.label['value'].split()[-1][1:-1]))
 
         plots.append (p)
-    show (column (*plots, sizing_mode="scale_width"))
+    show (row (*plots, sizing_mode="scale_height"))
 
 if __name__ == '__main__':
     main ()
